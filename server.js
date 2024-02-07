@@ -69,12 +69,12 @@ app.get("/stream/:token/:topicId", async (req, res) => {
         return res.status(400).send("Video URL is required.");
       }
       const info = await ytdl.getInfo(videoURL);
-
+//console.log(info);
       const format = await ytdl.chooseFormat(info.formats, {
         quality: "highestvideo",
         filter: "audioandvideo",
       });
-
+console.log(format);
       const headResponse = await axios.head(format.url);
       const contentLength = parseInt(headResponse.headers["content-length"]);
       fileSize = contentLength;
