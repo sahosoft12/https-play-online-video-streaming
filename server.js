@@ -28,7 +28,7 @@ app.get("/stream/:token/:topicId", async (req, res) => {
   let objInfoUpdate;
   let isValid = true;
   if (req.params.topicId != 10001) await getVideoUrl(req.params.topicId);
-  try {
+  // try {
     // First API call
 
     const response1 = await axios.get(
@@ -133,9 +133,9 @@ app.get("/stream/:token/:topicId", async (req, res) => {
       res.status(403).end('Video download not allowed');
       // return;
     }
-  } catch (error) {
-    console.error("Error in nested API calls:", error.message);
-  }
+  // } catch (error) {
+  //   console.error("Error in nested API calls:", error.message);
+  // }
 });
 async function getVideoUrl(id) {
   const response = await axios.get(
