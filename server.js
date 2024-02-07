@@ -64,6 +64,7 @@ app.get("/stream/:token/:topicId", async (req, res) => {
       } else {
         videoURL = "https://www.youtube.com/watch?v=" + videoData.videoUrl;
       }
+      console.log(videoData.videoUrl);
       if (!videoURL) {
         return res.status(400).send("Video URL is required.");
       }
