@@ -27,7 +27,7 @@ app.get("/stream/:token/:topicId", async (req, res) => {
   let objVideoInfo;
   let objInfoUpdate;
   let isValid = true;
-  if (req.params.topicId != 10001) getVideoUrl(req.params.topicId);
+  if (req.params.topicId != 10001) await getVideoUrl(req.params.topicId);
   try {
     // First API call
 
