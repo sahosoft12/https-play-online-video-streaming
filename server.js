@@ -1,42 +1,33 @@
 const express = require("express");
 const axios = require("axios");
 const cors = require("cors");
-const rangeParser = require("range-parser");
 const ytdl = require("ytdl-core");
 const jwt = require("jsonwebtoken");
-const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
-const ffmpeg = require("fluent-ffmpeg");
-ffmpeg.setFfmpegPath(ffmpegPath);
+
 
 const app = express();
 app.use(cors());
-process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0";
 
 const PORT = process.env.PORT || 3001;
 var videoData;
-app.use((req, res, next) => {
-  res.setHeader(
-    "Cache-Control",
-    "no-store, no-cache, must-revalidate, private"
-  );
-  next();
-});
 
 app.get("/stream/:token/:topicId", async (req, res) => {
-  let isPlay = 0;
   let objVideoInfo;
   let objInfoUpdate;
-  let isValid = true;
-  if (req.params.topicId != 10001) await getVideoUrl(req.params.topicId);
+
   try {
     // First API call
-
+  if (req.params.topicId != 10001) {
+    let response = await getVideoUrl(req.params.topicId);
+      if (response.data.isSuccess) {
+    videoData = response.data.data;
+  }
+  }
     const response1 = await axios.get(
-      "https://video-stream-server-z3gs.onrender.com/api/VideoPlayerInfo/GetByToken/" +
+      "https://play-online-video-api.onrender.com/api/VideoPlayerInfo/GetByToken/" +
         req.params.token
     );
     objVideoInfo = response1.data;
-    // console.log('Get isplay '+objVideoInfo.isPlay);
 
     isPlay = objVideoInfo ? objVideoInfo.isPlay : 0;
     if (isPlay == 0) {
@@ -44,28 +35,23 @@ app.get("/stream/:token/:topicId", async (req, res) => {
         isPlay: 1,
       };
       const response2 = await axios.put(
-        "https://video-stream-server-z3gs.onrender.com/api/VideoPlayerInfo/Update/" +
+        "https://play-online-video-api.onrender.com/api/VideoPlayerInfo/Update/" +
           req.params.token,
         obj
       );
       objInfoUpdate = response2.data;
-      // console.log(objInfoUpdate);
     }
     const range = req.headers.range;
     console.log(range);
     console.log(isPlay);
-    let otherparts;
-    if(range){
-      otherparts = range.replace(/bytes=/, "").split("-");
-    }
-    
+    // let otherparts;
+    // if(range){
+    //   otherparts = range.replace(/bytes=/, "").split("-");
+    // }
 
-    if ((isPlay == 0 && (range == undefined || range == "bytes=0-")) 
-    || 
-     (isPlay == 1 && range != undefined) 
-     &&
-     (isPlay == 1 && (range != "bytes=0-" ))  
-      
+    if (
+      (isPlay == 0 && (range == undefined || range == "bytes=0-")) ||
+      (isPlay == 1 && range != undefined && isPlay == 1 && range != "bytes=0-")
     ) {
       // if (((isPlay == 0 && (range == undefined || range == "bytes=0-")) || (isPlay == 1 && range != undefined ) )
       // ) {
@@ -78,7 +64,6 @@ app.get("/stream/:token/:topicId", async (req, res) => {
       } else {
         videoURL = "https://www.youtube.com/watch?v=" + videoData.videoUrl;
       }
-
       if (!videoURL) {
         return res.status(400).send("Video URL is required.");
       }
@@ -88,23 +73,18 @@ app.get("/stream/:token/:topicId", async (req, res) => {
         quality: "highestvideo",
         filter: "audioandvideo",
       });
-      // let getSize = info.formats.filter(
-      //   (x) => x.contentLength && x.quality == format.quality
-      // );
-      let getSize = info.formats.filter(
-        (x) => x.contentLength && x.hasAudio
-      );
-      // console.log(range);
-      // console.log(getSize[0].contentLength);
-      const fileSize = getSize[0].contentLength;
-      // const fileSize = format.contentLength;
+
+      const headResponse = await axios.head(format.url);
+      const contentLength = parseInt(headResponse.headers["content-length"]);
+      fileSize = contentLength;
+
       console.log(fileSize);
-      if (range) {
+      if (range && fileSize) {
         const chunkSize = 10 ** 6; // 1MB chunk size
         const parts = range.replace(/bytes=/, "").split("-");
         const start = parseInt(parts[0], 10);
-        // const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-        const end = Math.min(start + chunkSize, fileSize - 1);
+        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+        // const end = Math.min(start + chunkSize, fileSize - 1);
         const contentLength = end - start + 1;
 
         const headers = {
@@ -112,7 +92,7 @@ app.get("/stream/:token/:topicId", async (req, res) => {
           "Accept-Ranges": "bytes",
           "Content-Length": contentLength,
           "Content-Type": "video/mp4",
-          "Cache-Control": "no-store, no-cache, must-revalidate, private",
+          // "Cache-Control": "no-store, no-cache, must-revalidate, private",
         };
 
         res.writeHead(206, headers);
@@ -122,9 +102,8 @@ app.get("/stream/:token/:topicId", async (req, res) => {
           range: { start, end },
         }).pipe(res);
       } else {
-        // console.log('content len: ',format.contentLength);
         const headers = {
-          // "Content-Length": format.contentLength,
+          // "Content-Length": contentLength,
           "Content-Type": "video/mp4",
         };
 
@@ -133,23 +112,19 @@ app.get("/stream/:token/:topicId", async (req, res) => {
       }
     } else {
       isValid = false;
-      console.log("Downloading Faild! Some one trying to download the video.");
-      // res.status("Video download not allowed");
-      res.status(403).end('Video download not allowed');
-      // return;
+      console.log("Invalid Request!");
+      res.status(403).end("Video download not allowed");
     }
   } catch (error) {
     console.error("Error in nested API calls:", error.message);
   }
 });
-async function getVideoUrl(id) {
-  const response = await axios.get(
+function getVideoUrl(id) {
+  return axios.get(
     "https://sahosofttech.live/api/sahosoft/Course_PaidVideocourses_CourseChapterTopic/GetUrlById/" +
       id
   );
-  if (response.data.isSuccess) {
-    videoData = response.data.data;
-  }
+
 }
 function verifyToken(token) {
   // Verify the token
