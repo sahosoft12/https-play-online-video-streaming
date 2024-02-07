@@ -28,6 +28,7 @@ app.get("/stream/:token/:topicId", async (req, res) => {
         req.params.token
     );
     objVideoInfo = response1.data;
+    console.log(objVideoInfo);
 
     isPlay = objVideoInfo ? objVideoInfo.isPlay : 0;
     if (isPlay == 0) {
@@ -41,6 +42,7 @@ app.get("/stream/:token/:topicId", async (req, res) => {
       );
       objInfoUpdate = response2.data;
     }
+    console.log(objInfoUpdate);
     const range = req.headers.range;
     console.log(range);
     console.log(isPlay);
