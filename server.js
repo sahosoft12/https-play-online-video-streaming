@@ -24,7 +24,7 @@ app.get("/stream/:token/:topicId", async (req, res) => {
     // First API call
 
     const response1 = await axios.get(
-      "https://play-online-video-api.onrender.com/api/VideoPlayerInfo/GetByToken/" +
+      "https://video-stream-server-z3gs.onrender.com/api/VideoPlayerInfo/GetByToken/" +
         req.params.token
     );
     objVideoInfo = response1.data;
@@ -35,7 +35,7 @@ app.get("/stream/:token/:topicId", async (req, res) => {
         isPlay: 1,
       };
       const response2 = await axios.put(
-        "https://play-online-video-api.onrender.com/api/VideoPlayerInfo/Update/" +
+        "https://video-stream-server-z3gs.onrender.com/api/VideoPlayerInfo/Update/" +
           req.params.token,
         obj
       );
