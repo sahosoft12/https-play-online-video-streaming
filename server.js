@@ -3,10 +3,13 @@ const axios = require("axios");
 const cors = require("cors");
 const ytdl = require("ytdl-core");
 const jwt = require("jsonwebtoken");
-
+const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
+const ffmpeg = require("fluent-ffmpeg");
+ffmpeg.setFfmpegPath(ffmpegPath);
 
 const app = express();
 app.use(cors());
+process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0";
 
 const PORT = process.env.PORT || 3001;
 var videoData;
