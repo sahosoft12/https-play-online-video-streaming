@@ -1,7 +1,6 @@
 const express = require("express");
 const axios = require("axios");
 const cors = require("cors");
-const rangeParser = require("range-parser");
 const ytdl = require("ytdl-core");
 const jwt = require("jsonwebtoken");
 const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
@@ -14,13 +13,11 @@ process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0";
 
 const PORT = process.env.PORT || 3001;
 var videoData;
+
 app.get("/stream/:token/:topicId", async (req, res) => {
-  let isPlay = 0;
   let objVideoInfo;
   let objInfoUpdate;
-  let isValid = true;
-  if (req.params.topicId != 10001) 
-  {
+  if (req.params.topicId != 10001) {
     await getVideoUrl(req.params.topicId);
   }
   try {
@@ -47,18 +44,14 @@ app.get("/stream/:token/:topicId", async (req, res) => {
     const range = req.headers.range;
     console.log(range);
     console.log(isPlay);
-    let otherparts;
-    if(range){
-      otherparts = range.replace(/bytes=/, "").split("-");
-    }
-    
+    // let otherparts;
+    // if(range){
+    //   otherparts = range.replace(/bytes=/, "").split("-");
+    // }
 
-    if ((isPlay == 0 && (range == undefined || range == "bytes=0-")) 
-    || 
-     (isPlay == 1 && range != undefined) 
-     &&
-     (isPlay == 1 && (range != "bytes=0-" ))  
-      
+    if (
+      (isPlay == 0 && (range == undefined || range == "bytes=0-")) ||
+      (isPlay == 1 && range != undefined && isPlay == 1 && range != "bytes=0-")
     ) {
       // if (((isPlay == 0 && (range == undefined || range == "bytes=0-")) || (isPlay == 1 && range != undefined ) )
       // ) {
@@ -80,17 +73,18 @@ app.get("/stream/:token/:topicId", async (req, res) => {
         quality: "highestvideo",
         filter: "audioandvideo",
       });
+
       const headResponse = await axios.head(format.url);
-      const contentLength = parseInt(headResponse.headers['content-length']);
-      const fileSize = contentLength;
-      // const fileSize = format.contentLength;
+      const contentLength = parseInt(headResponse.headers["content-length"]);
+      fileSize = contentLength;
+
       console.log(fileSize);
       if (range && fileSize) {
         const chunkSize = 10 ** 6; // 1MB chunk size
         const parts = range.replace(/bytes=/, "").split("-");
         const start = parseInt(parts[0], 10);
-        // const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-        const end = Math.min(start + chunkSize, fileSize - 1);
+        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+        // const end = Math.min(start + chunkSize, fileSize - 1);
         const contentLength = end - start + 1;
 
         const headers = {
@@ -108,9 +102,8 @@ app.get("/stream/:token/:topicId", async (req, res) => {
           range: { start, end },
         }).pipe(res);
       } else {
-        // console.log('content len: ',format.contentLength);
         const headers = {
-          // "Content-Length": format.contentLength,
+          // "Content-Length": contentLength,
           "Content-Type": "video/mp4",
         };
 
@@ -120,9 +113,7 @@ app.get("/stream/:token/:topicId", async (req, res) => {
     } else {
       isValid = false;
       console.log("Invalid Request!");
-      // res.status("Video download not allowed");
-      res.status(403).end('Video download not allowed');
-      // return;
+      res.status(403).end("Video download not allowed");
     }
   } catch (error) {
     console.error("Error in nested API calls:", error.message);
