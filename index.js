@@ -50,7 +50,7 @@ app.get("/stream/:token/:topicId", async (req, res) => {
     // }
 
     if (
-      (isPlay == 0 && (range == undefined || range == "bytes=0-")) ||
+      (isPlay == 0 && (range == undefined || range == "bytes=0-" || range == "bytes=0-1")) ||
       (isPlay == 1 && range != undefined && isPlay == 1 && range != "bytes=0-")
     ) {
       // if (((isPlay == 0 && (range == undefined || range == "bytes=0-")) || (isPlay == 1 && range != undefined ) )
